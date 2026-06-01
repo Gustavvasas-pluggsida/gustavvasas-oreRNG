@@ -118,6 +118,41 @@ body,#root{background:#fff;font-family:'Segoe UI',system-ui,sans-serif;color:#1a
   <h3>Stats</h3>
   <div id="stats-box"></div>
 </div>
+  <div id="ore-modal" style="
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.5);
+align-items:center;
+justify-content:center;
+z-index:1000;
+">
+  <div style="
+  background:white;
+  padding:24px;
+  width:320px;
+  border-radius:12px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  ">
+    <div id="modal-title" style="font-size:22px;font-weight:600"></div>
+
+    <div id="modal-info" style="font-size:13px;opacity:.6"></div>
+
+    <div id="modal-count" style="font-size:14px"></div>
+
+    <div id="modal-super" style="font-size:14px"></div>
+
+    <button id="merge-btn" class="txt-btn">
+      Merge 5 into Super Ore
+    </button>
+
+    <button class="txt-btn muted" onclick="closeOreModal()">
+      Close
+    </button>
+  </div>
+</div>
 </div>
 
 <script>
@@ -177,8 +212,8 @@ const SPINS=[
   {id:"dirt",name:"Dirt",baseCost:10,boost:1},
   {id:"stone",name:"Stone",baseCost:100,boost:5},
   {id:"iron",name:"Iron",baseCost:1000,boost:10},
-  {id:"gold",name:"Gold",baseCost:10000,boost:25},
-  {id:"diamond",name:"Diamond",baseCost:1000000,boost:100},
+  {id:"gold",name:"Gold",baseCost:10000,boost:50},
+  {id:"diamond",name:"Diamond",baseCost:1000000,boost:250},
 ];
 const BGS=[
   {name:"White",val:"#ffffff"},
@@ -193,7 +228,18 @@ const BGS=[
   {name:"Black",val:"#1a1a1a"},
 ];
 
-let G={coins:10,earned:0,spins:0,rebirths:0,curSpin:"dirt",inv:{},bestTier:0,recent:[],ul:{dirt:true,stone:false,iron:false,gold:false,diamond:false}};
+let G={
+  coins:10,
+  earned:0,
+  spins:0,
+  rebirths:0,
+  curSpin:"dirt",
+  inv:{},
+  superInv:{},
+  bestTier:0,
+  recent:[],
+  ul:{dirt:true,stone:false,iron:false,gold:false,diamond:false}
+};
 let bgVal="#ffffff";
   const SAVE_KEY = "ore_rng_save_v1";
 
@@ -222,11 +268,38 @@ function loadGame() {
 function disc(){return 1-Math.min(.9,G.rebirths*.1)}
 function scost(s){return Math.ceil(s.baseCost*disc())}
 function getBest(){
-  let b=null;
+  let best = null;
+  let bestCps = 0;
+
   for(let id in G.inv){
-    if(G.inv[id]>0){let o=ORES[+id];if(!b||o.cps>b.cps)b=o;}
+    if(G.inv[id] > 0){
+      let ore = ORES[+id];
+      let cps = ore.cps;
+
+      if(cps > bestCps){
+        best = ore;
+        bestCps = cps;
+      }
+    }
   }
-  return b;
+
+  for(let id in G.superInv){
+    if(G.superInv[id] > 0){
+      let ore = ORES[+id];
+      let cps = ore.cps * 2;
+
+      if(cps > bestCps){
+        best = {
+          ...ore,
+          name: "Super " + ore.name,
+          cps: cps
+        };
+        bestCps = cps;
+      }
+    }
+  }
+
+  return best;
 }
 function getCPS(){let b=getBest();return b?b.cps:0;}
 function fmt(n){if(n>=1e12)return(n/1e12).toFixed(2)+'T';if(n>=1e9)return(n/1e9).toFixed(2)+'B';if(n>=1e6)return(n/1e6).toFixed(2)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return n.toFixed(2)}
@@ -306,7 +379,64 @@ function goto(s){
   if(s==='inventory')renderInv();
   if(s==='settings')renderSet();
 }
+let currentOre = null;
 
+function openOreModal(id){
+  currentOre = id;
+
+  let ore = ORES[id];
+  let count = G.inv[id] || 0;
+  let superCount = G.superInv[id] || 0;
+
+  document.getElementById('ore-modal').style.display = 'flex';
+
+  document.getElementById('modal-title').textContent = ore.name;
+
+  document.getElementById('modal-title').style.color = ore.color;
+
+  document.getElementById('modal-info').textContent =
+    ore.rarity + ' · Tier ' + ore.tier;
+
+  document.getElementById('modal-count').textContent =
+    'Normal: ' + count;
+
+  document.getElementById('modal-super').textContent =
+    'Super: ' + superCount + ' · ' + fmt(ore.cps * 2) + ' / sec';
+
+  let btn = document.getElementById('merge-btn');
+
+  if(count >= 5){
+    btn.style.display = 'block';
+    btn.textContent = 'Merge 5 into Super Ore';
+  }else{
+    btn.style.display = 'none';
+  }
+}
+
+function closeOreModal(){
+  document.getElementById('ore-modal').style.display = 'none';
+}
+
+document.getElementById('merge-btn').onclick = function(){
+  if(currentOre === null) return;
+
+  let count = G.inv[currentOre] || 0;
+
+  if(count < 5) return;
+
+  G.inv[currentOre] -= 5;
+
+  G.superInv[currentOre] =
+    (G.superInv[currentOre] || 0) + 1;
+
+  saveGame();
+
+  renderInv();
+
+  openOreModal(currentOre);
+
+  updateUI();
+};
 function renderInv(){
   let found=Object.keys(G.inv).filter(id=>G.inv[id]>0).length;
   document.getElementById('inv-count').textContent=found+' / 50';
@@ -318,6 +448,9 @@ function renderInv(){
     d.innerHTML=cnt>0
       ?`<div class="inv-cdot" style="background:${o.color}"></div><div class="inv-name">${o.name}</div><div class="inv-rare">${o.rarity}</div><div class="inv-cnt">×${cnt} · T${o.tier}</div>`
       :`<div class="inv-cdot"></div><div class="inv-name" style="color:#ccc">???</div><div class="inv-rare" style="color:#ddd">unknown</div>`;
+    if(cnt > 0){
+  d.onclick = () => openOreModal(o.id);
+}
     g.appendChild(d);
   });
 }
