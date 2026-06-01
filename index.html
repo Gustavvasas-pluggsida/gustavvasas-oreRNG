@@ -175,10 +175,10 @@ const ORES=[
 ];
 const SPINS=[
   {id:"dirt",name:"Dirt",baseCost:10,boost:1},
-  {id:"stone",name:"Stone",baseCost:100,boost:2.5},
-  {id:"iron",name:"Iron",baseCost:1000,boost:6},
-  {id:"gold",name:"Gold",baseCost:10000,boost:16},
-  {id:"diamond",name:"Diamond",baseCost:1000000,boost:60},
+  {id:"stone",name:"Stone",baseCost:100,boost:5},
+  {id:"iron",name:"Iron",baseCost:1000,boost:10},
+  {id:"gold",name:"Gold",baseCost:10000,boost:25},
+  {id:"diamond",name:"Diamond",baseCost:1000000,boost:100},
 ];
 const BGS=[
   {name:"White",val:"#ffffff"},
@@ -195,6 +195,29 @@ const BGS=[
 
 let G={coins:10,earned:0,spins:0,rebirths:0,curSpin:"dirt",inv:{},bestTier:0,recent:[],ul:{dirt:true,stone:false,iron:false,gold:false,diamond:false}};
 let bgVal="#ffffff";
+  const SAVE_KEY = "ore_rng_save_v1";
+
+function saveGame() {
+  localStorage.setItem(SAVE_KEY, JSON.stringify({
+    G,
+    bgVal
+  }));
+}
+
+function loadGame() {
+  let data = localStorage.getItem(SAVE_KEY);
+
+  if (!data) return;
+
+  try {
+    let parsed = JSON.parse(data);
+
+    if (parsed.G) G = parsed.G;
+    if (parsed.bgVal) bgVal = parsed.bgVal;
+  } catch (e) {
+    console.error("Save failed to load", e);
+  }
+}
 
 function disc(){return 1-Math.min(.9,G.rebirths*.1)}
 function scost(s){return Math.ceil(s.baseCost*disc())}
@@ -238,6 +261,7 @@ function doSpin(){
     lbl.classList.remove('drop');
   },280);
   updateUI();
+  saveGame();
 }
 
 function doRebirth(){
@@ -249,6 +273,7 @@ function doRebirth(){
   let lbl=document.getElementById('ore-label');
   lbl.textContent='—';lbl.style.opacity='.3';lbl.style.color='#1a1a1a';
   document.getElementById('ore-rarity').textContent='';
+  saveGame();
   updateUI();
 }
 
@@ -303,7 +328,12 @@ function renderSet(){
     let d=document.createElement('div');
     d.className='bg-swatch'+(bgVal===c.val?' sel':'');
     d.style.background=c.val;d.title=c.name;
-    d.onclick=()=>{bgVal=c.val;applyBg();renderSet()};
+    d.onclick=()=>{
+  bgVal=c.val;
+  applyBg();
+  renderSet();
+  saveGame();
+};
     br.appendChild(d);
   });
   let best=getBest();
@@ -322,11 +352,19 @@ function applyBg(){
   document.getElementById('root').style.background=bgVal;
 }
 
-setInterval(()=>{
-  let g=getCPS()/10;
-  if(g>0){G.coins+=g;G.earned+=g;}
-  updateUI();
-},100);
+setInterval(() => {
+  let g = getCPS() / 10;
 
-applyBg();updateUI();
+  if (g > 0) {
+    G.coins += g;
+    G.earned += g;
+  }
+
+  updateUI();
+  saveGame();
+}, 100);
+
+loadGame();
+applyBg();
+updateUI();
 </script>
