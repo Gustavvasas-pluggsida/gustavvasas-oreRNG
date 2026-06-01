@@ -1,0 +1,332 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body,#root{background:#fff;font-family:'Segoe UI',system-ui,sans-serif;color:#1a1a1a;min-height:750px}
+#root{width:100%;position:relative}
+.screen{display:none;width:100%;min-height:750px}
+.screen.on{display:flex}
+#screen-main{flex-direction:row;align-items:stretch}
+.col-left{width:200px;flex-shrink:0;display:flex;flex-direction:column;padding:40px 0 40px 36px}
+.col-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.col-right{width:200px;flex-shrink:0;display:flex;flex-direction:column;padding:40px 36px 40px 0;align-items:flex-end}
+.txt-btn{background:none;border:none;padding:0;cursor:pointer;font-family:inherit;color:#1a1a1a;font-size:13px;letter-spacing:.2px;text-align:left;line-height:1.8}
+.txt-btn:hover{opacity:.5}
+.txt-btn.muted{color:#1a1a1a;font-size:12px}
+.txt-btn.active{font-weight:600}
+.txt-btn.locked{color:#bbb;cursor:default}
+.txt-btn.locked:hover{opacity:1}
+.money-block{margin-bottom:auto;padding-top:10px}
+.money-label{font-size:11px;letter-spacing:2px;color:#1a1a1a;text-transform:uppercase;margin-bottom:4px}
+.money-val{font-size:32px;font-weight:300;letter-spacing:-1px;color:#1a1a1a;line-height:1.1}
+.money-ps{font-size:11px;color:#1a1a1a;margin-top:4px;opacity:.5}
+.recent-block{margin-top:auto}
+.recent-label{font-size:10px;letter-spacing:2px;color:#1a1a1a;text-transform:uppercase;margin-bottom:8px;opacity:.4}
+.recent-item{font-size:12px;padding:2px 0;display:flex;justify-content:space-between;gap:12px}
+.recent-item .rname{font-weight:500}
+.recent-item .rtier{font-size:11px;opacity:.4}
+.rebirth-block{margin-top:20px}
+.spin-center{display:flex;flex-direction:column;align-items:center;gap:60px}
+.ore-display{display:flex;flex-direction:column;align-items:center;gap:8px;min-height:90px;justify-content:center}
+.ore-dot{width:32px;height:32px;border-radius:50%;background:#e0e0e0;transition:background 0.3s}
+.ore-dot.spin{animation:dot-spin 0.35s ease-out}
+@keyframes dot-spin{0%{transform:rotate(0) scale(1)}50%{transform:rotate(180deg) scale(0.6)}100%{transform:rotate(360deg) scale(1)}}
+.ore-label{font-size:22px;font-weight:300;letter-spacing:-.5px;color:#1a1a1a;text-align:center;transition:transform 0.2s}
+.ore-label.drop{transform:translateY(5px)}
+.ore-rarity{font-size:11px;color:#1a1a1a;opacity:.4;letter-spacing:.3px}
+.spin-action{display:flex;flex-direction:column;align-items:center;gap:6px}
+.big-spin-btn{background:none;border:none;cursor:pointer;font-family:inherit;font-size:15px;font-weight:500;color:#1a1a1a;letter-spacing:.3px;padding:0;transition:opacity 0.1s;text-align:center}
+.big-spin-btn:hover{opacity:.5}
+.big-spin-btn:active{opacity:.3}
+.spin-cost{font-size:11px;color:#1a1a1a;opacity:.35;letter-spacing:.2px}
+.tier-list{display:flex;flex-direction:column;gap:4px;align-items:flex-end;margin-bottom:auto;padding-top:10px}
+.inv-screen{flex-direction:column;padding:40px 40px}
+.inv-top{display:flex;align-items:baseline;gap:16px;margin-bottom:28px}
+.inv-top h2{font-size:14px;font-weight:500;letter-spacing:.3px;color:#1a1a1a}
+.inv-top span{font-size:11px;color:#1a1a1a;opacity:.5}
+.inv-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.inv-card{display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 6px;cursor:pointer}
+.inv-card:hover .inv-name{opacity:.5}
+.inv-card.empty{opacity:.2;cursor:default;pointer-events:none}
+.inv-cdot{width:20px;height:20px;border-radius:50%;background:#e0e0e0}
+.inv-name{font-size:11px;font-weight:500;color:#1a1a1a}
+.inv-rare{font-size:10px;color:#1a1a1a;opacity:.4}
+.inv-cnt{font-size:10px;color:#1a1a1a;opacity:.3}
+.set-screen{flex-direction:column;padding:40px 40px}
+.set-screen h3{font-size:10px;letter-spacing:2px;color:#1a1a1a;text-transform:uppercase;margin-bottom:14px;opacity:.4}
+.bg-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:32px}
+.bg-swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;transition:transform 0.1s;border:.5px solid rgba(0,0,0,.1)}
+.bg-swatch:hover{transform:scale(1.15)}
+.bg-swatch.sel{outline:2px solid #1a1a1a;outline-offset:2px}
+.stat-r{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:.5px solid rgba(0,0,0,.07);color:#1a1a1a}
+.stat-r:last-child{border:none}
+.stat-r b{font-weight:500;color:#1a1a1a}
+</style>
+
+<div id="root">
+<div id="screen-main" class="screen on">
+  <div class="col-left">
+    <div class="money-block">
+      <div class="money-label">Money</div>
+      <div class="money-val" id="money-val">10.00</div>
+      <div class="money-ps" id="money-ps">+0.00 / sec</div>
+    </div>
+    <div class="recent-block">
+      <div class="recent-label">Recent</div>
+      <div id="recent-list"></div>
+      <div class="rebirth-block">
+        <button class="txt-btn muted" id="rebirth-btn" onclick="doRebirth()">Rebirth</button>
+        <div style="font-size:10px;color:#1a1a1a;opacity:.35;margin-top:2px" id="rebirth-info">0 rebirths</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-mid">
+    <div class="spin-center">
+      <div class="ore-display">
+        <div class="ore-dot" id="ore-dot"></div>
+        <div class="ore-label" id="ore-label" style="opacity:.3">—</div>
+        <div class="ore-rarity" id="ore-rarity"></div>
+      </div>
+      <div class="spin-action">
+        <button class="big-spin-btn" id="spin-btn" onclick="doSpin()">Spin</button>
+        <div class="spin-cost" id="spin-cost">10 coins</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-right">
+    <div class="tier-list" id="tier-list"></div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;margin-top:auto">
+      <button class="txt-btn" onclick="goto('inventory')">Inventory</button>
+      <button class="txt-btn" onclick="goto('settings')">Settings</button>
+    </div>
+  </div>
+</div>
+<div id="screen-inventory" class="screen inv-screen">
+  <div class="inv-top">
+    <h2>Inventory</h2>
+    <span id="inv-count">0 / 50</span>
+    <button class="txt-btn muted" style="margin-left:auto" onclick="goto('main')">Back</button>
+  </div>
+  <div class="inv-grid" id="inv-grid"></div>
+</div>
+<div id="screen-settings" class="screen set-screen">
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:32px">
+    <span style="font-size:14px;font-weight:500;color:#1a1a1a">Settings</span>
+    <button class="txt-btn muted" style="margin-left:auto" onclick="goto('main')">Back</button>
+  </div>
+  <h3>Background</h3>
+  <div class="bg-row" id="bg-row"></div>
+  <h3>Stats</h3>
+  <div id="stats-box"></div>
+</div>
+</div>
+
+<script>
+const ORES=[
+  {id:0,name:"Gravel",color:"#9a9a9a",tier:1,rarity:"1 in 2",weight:5000,cps:.1},
+  {id:1,name:"Sand",color:"#c8b560",tier:1,rarity:"1 in 2.5",weight:4000,cps:.15},
+  {id:2,name:"Clay",color:"#c47a3c",tier:1,rarity:"1 in 3",weight:3333,cps:.2},
+  {id:3,name:"Coal",color:"#555",tier:2,rarity:"1 in 4",weight:2500,cps:.3},
+  {id:4,name:"Limestone",color:"#c8c0a0",tier:2,rarity:"1 in 5",weight:2000,cps:.4},
+  {id:5,name:"Flint",color:"#888",tier:2,rarity:"1 in 6",weight:1667,cps:.5},
+  {id:6,name:"Marble",color:"#b8aee0",tier:3,rarity:"1 in 8",weight:1250,cps:.7},
+  {id:7,name:"Granite",color:"#a88070",tier:3,rarity:"1 in 10",weight:1000,cps:1},
+  {id:8,name:"Quartz",color:"#c0b0e8",tier:3,rarity:"1 in 12",weight:833,cps:1.3},
+  {id:9,name:"Obsidian",color:"#5030a0",tier:3,rarity:"1 in 15",weight:667,cps:1.7},
+  {id:10,name:"Tin",color:"#a0b0a8",tier:4,rarity:"1 in 18",weight:556,cps:2.2},
+  {id:11,name:"Copper",color:"#c87832",tier:4,rarity:"1 in 22",weight:455,cps:2.8},
+  {id:12,name:"Iron",color:"#7090a8",tier:4,rarity:"1 in 28",weight:357,cps:3.5},
+  {id:13,name:"Silver",color:"#a0a8c0",tier:4,rarity:"1 in 35",weight:286,cps:4.5},
+  {id:14,name:"Nickel",color:"#909870",tier:5,rarity:"1 in 45",weight:222,cps:6},
+  {id:15,name:"Zinc",color:"#6080a0",tier:5,rarity:"1 in 55",weight:182,cps:8},
+  {id:16,name:"Bronze",color:"#b06018",tier:5,rarity:"1 in 70",weight:143,cps:10},
+  {id:17,name:"Titanium",color:"#7080c0",tier:5,rarity:"1 in 90",weight:111,cps:14},
+  {id:18,name:"Tungsten",color:"#607080",tier:6,rarity:"1 in 115",weight:87,cps:18},
+  {id:19,name:"Chromium",color:"#50a8c8",tier:6,rarity:"1 in 150",weight:67,cps:24},
+  {id:20,name:"Platinum",color:"#90c8e0",tier:6,rarity:"1 in 200",weight:50,cps:32},
+  {id:21,name:"Sapphire",color:"#2050d0",tier:6,rarity:"1 in 260",weight:38,cps:42},
+  {id:22,name:"Ruby",color:"#c01030",tier:7,rarity:"1 in 340",weight:29,cps:56},
+  {id:23,name:"Emerald",color:"#108030",tier:7,rarity:"1 in 450",weight:22,cps:74},
+  {id:24,name:"Topaz",color:"#d09018",tier:7,rarity:"1 in 580",weight:17,cps:98},
+  {id:25,name:"Opal",color:"#c0a8f0",tier:7,rarity:"1 in 750",weight:13,cps:130},
+  {id:26,name:"Garnet",color:"#a01820",tier:8,rarity:"1 in 1000",weight:10,cps:170},
+  {id:27,name:"Amethyst",color:"#7028b0",tier:8,rarity:"1 in 1300",weight:7.7,cps:225},
+  {id:28,name:"Onyx",color:"#303030",tier:8,rarity:"1 in 1700",weight:5.9,cps:300},
+  {id:29,name:"Tourmaline",color:"#d03898",tier:8,rarity:"1 in 2200",weight:4.5,cps:400},
+  {id:30,name:"Alexandrite",color:"#30b070",tier:9,rarity:"1 in 3000",weight:3.3,cps:530},
+  {id:31,name:"Aquamarine",color:"#30a8d0",tier:9,rarity:"1 in 4000",weight:2.5,cps:700},
+  {id:32,name:"Moonstone",color:"#a0c8f0",tier:9,rarity:"1 in 5200",weight:1.9,cps:930},
+  {id:33,name:"Sunstone",color:"#e08010",tier:9,rarity:"1 in 7000",weight:1.43,cps:1240},
+  {id:34,name:"Peridot",color:"#70b010",tier:9,rarity:"1 in 9000",weight:1.11,cps:1650},
+  {id:35,name:"Larimar",color:"#40b0c8",tier:10,rarity:"1 in 12000",weight:.83,cps:2200},
+  {id:36,name:"Tanzanite",color:"#5030b0",tier:10,rarity:"1 in 16000",weight:.625,cps:2900},
+  {id:37,name:"Padparadscha",color:"#e05030",tier:10,rarity:"1 in 22000",weight:.454,cps:3900},
+  {id:38,name:"Musgravite",color:"#1870a0",tier:10,rarity:"1 in 30000",weight:.333,cps:5200},
+  {id:39,name:"Painite",color:"#c03808",tier:10,rarity:"1 in 40000",weight:.25,cps:6900},
+  {id:40,name:"Red Diamond",color:"#ee0820",tier:11,rarity:"1 in 55000",weight:.182,cps:9200},
+  {id:41,name:"Blue Diamond",color:"#0030f0",tier:11,rarity:"1 in 75000",weight:.133,cps:12300},
+  {id:42,name:"Pink Diamond",color:"#e050b8",tier:11,rarity:"1 in 100000",weight:.1,cps:16400},
+  {id:43,name:"Black Diamond",color:"#282830",tier:11,rarity:"1 in 140000",weight:.0714,cps:21800},
+  {id:44,name:"Void Crystal",color:"#4010a0",tier:12,rarity:"1 in 190000",weight:.0526,cps:29000},
+  {id:45,name:"Star Fragment",color:"#d8c820",tier:12,rarity:"1 in 260000",weight:.0385,cps:38700},
+  {id:46,name:"Cosmic Shard",color:"#9040e8",tier:12,rarity:"1 in 360000",weight:.0278,cps:51600},
+  {id:47,name:"Celestite",color:"#4060e8",tier:12,rarity:"1 in 500000",weight:.02,cps:68700},
+  {id:48,name:"Nebula Stone",color:"#d020d0",tier:13,rarity:"1 in 700000",weight:.0143,cps:91600},
+  {id:49,name:"Eternite",color:"#c0c0c8",tier:13,rarity:"1 in 1000000",weight:.01,cps:122000},
+];
+const SPINS=[
+  {id:"dirt",name:"Dirt",baseCost:10,boost:1},
+  {id:"stone",name:"Stone",baseCost:100,boost:2.5},
+  {id:"iron",name:"Iron",baseCost:1000,boost:6},
+  {id:"gold",name:"Gold",baseCost:10000,boost:16},
+  {id:"diamond",name:"Diamond",baseCost:1000000,boost:60},
+];
+const BGS=[
+  {name:"White",val:"#ffffff"},
+  {name:"Red",val:"#ff4444"},
+  {name:"Green",val:"#44bb44"},
+  {name:"Blue",val:"#4488ff"},
+  {name:"Yellow",val:"#ffcc00"},
+  {name:"Orange",val:"#ff8822"},
+  {name:"Purple",val:"#8844ee"},
+  {name:"Pink",val:"#ff66aa"},
+  {name:"Teal",val:"#22bbaa"},
+  {name:"Black",val:"#1a1a1a"},
+];
+
+let G={coins:10,earned:0,spins:0,rebirths:0,curSpin:"dirt",inv:{},bestTier:0,recent:[],ul:{dirt:true,stone:false,iron:false,gold:false,diamond:false}};
+let bgVal="#ffffff";
+
+function disc(){return 1-Math.min(.9,G.rebirths*.1)}
+function scost(s){return Math.ceil(s.baseCost*disc())}
+function getBest(){
+  let b=null;
+  for(let id in G.inv){
+    if(G.inv[id]>0){let o=ORES[+id];if(!b||o.cps>b.cps)b=o;}
+  }
+  return b;
+}
+function getCPS(){let b=getBest();return b?b.cps:0;}
+function fmt(n){if(n>=1e12)return(n/1e12).toFixed(2)+'T';if(n>=1e9)return(n/1e9).toFixed(2)+'B';if(n>=1e6)return(n/1e6).toFixed(2)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return n.toFixed(2)}
+
+function roll(spin){
+  let ws=ORES.map(o=>o.weight*Math.pow(spin.boost,(o.tier-1)*.15));
+  let tot=ws.reduce((a,b)=>a+b,0),r=Math.random()*tot,c=0;
+  for(let i=0;i<ORES.length;i++){c+=ws[i];if(r<=c)return ORES[i];}
+  return ORES[0];
+}
+
+function doSpin(){
+  let spin=SPINS.find(s=>s.id===G.curSpin);
+  let cost=scost(spin);
+  if(G.coins<cost)return;
+  G.coins-=cost;G.spins++;
+  let ore=roll(spin);
+  G.inv[ore.id]=(G.inv[ore.id]||0)+1;
+  if(ore.tier>G.bestTier)G.bestTier=ore.tier;
+  G.recent.unshift(ore);
+  if(G.recent.length>5)G.recent.pop();
+  let dot=document.getElementById('ore-dot');
+  let lbl=document.getElementById('ore-label');
+  lbl.classList.add('drop');
+  dot.classList.remove('spin');void dot.offsetWidth;dot.classList.add('spin');
+  setTimeout(()=>{
+    dot.style.background=ore.color;
+    lbl.style.opacity='1';
+    lbl.textContent=ore.name;
+    lbl.style.color='#1a1a1a';
+    document.getElementById('ore-rarity').textContent=ore.rarity+' · Tier '+ore.tier;
+    lbl.classList.remove('drop');
+  },280);
+  updateUI();
+}
+
+function doRebirth(){
+  if(G.bestTier<5)return;
+  G.rebirths++;G.coins=10;G.inv={};G.bestTier=0;G.curSpin="dirt";
+  G.ul={dirt:true,stone:false,iron:false,gold:false,diamond:false};
+  G.recent=[];
+  document.getElementById('ore-dot').style.background='#e0e0e0';
+  let lbl=document.getElementById('ore-label');
+  lbl.textContent='—';lbl.style.opacity='.3';lbl.style.color='#1a1a1a';
+  document.getElementById('ore-rarity').textContent='';
+  updateUI();
+}
+
+function updateUI(){
+  document.getElementById('money-val').textContent=fmt(G.coins);
+  let cps=getCPS();
+  document.getElementById('money-ps').textContent='+'+fmt(cps)+' / sec';
+  document.getElementById('rebirth-info').textContent=G.rebirths+' rebirth'+(G.rebirths!==1?'s':'')+' · '+(G.rebirths*10)+'% off';
+  let spin=SPINS.find(s=>s.id===G.curSpin);
+  let cost=scost(spin);
+  document.getElementById('spin-btn').style.opacity=G.coins>=cost?'1':'.3';
+  document.getElementById('spin-cost').textContent=fmt(cost)+' coins';
+  SPINS.forEach(s=>{if(G.coins>=scost(s))G.ul[s.id]=true;});
+  let tl=document.getElementById('tier-list');tl.innerHTML='';
+  SPINS.forEach(s=>{
+    let d=document.createElement('button');
+    let active=G.curSpin===s.id,locked=!G.ul[s.id];
+    d.className='txt-btn'+(active?' active':'')+(locked?' locked':'');
+    d.style.fontSize='12px';
+    d.textContent=s.name+(active?' ·':'');
+    if(!locked)d.onclick=()=>{G.curSpin=s.id;updateUI()};
+    tl.appendChild(d);
+  });
+  document.getElementById('recent-list').innerHTML=G.recent.map(o=>`<div class="recent-item"><span class="rname" style="color:#1a1a1a">${o.name}</span><span class="rtier">T${o.tier}</span></div>`).join('');
+}
+
+function goto(s){
+  document.querySelectorAll('.screen').forEach(e=>e.classList.remove('on'));
+  document.getElementById('screen-'+s).classList.add('on');
+  if(s==='inventory')renderInv();
+  if(s==='settings')renderSet();
+}
+
+function renderInv(){
+  let found=Object.keys(G.inv).filter(id=>G.inv[id]>0).length;
+  document.getElementById('inv-count').textContent=found+' / 50';
+  let g=document.getElementById('inv-grid');g.innerHTML='';
+  ORES.forEach(o=>{
+    let cnt=G.inv[o.id]||0;
+    let d=document.createElement('div');
+    d.className='inv-card'+(cnt===0?' empty':'');
+    d.innerHTML=cnt>0
+      ?`<div class="inv-cdot" style="background:${o.color}"></div><div class="inv-name">${o.name}</div><div class="inv-rare">${o.rarity}</div><div class="inv-cnt">×${cnt} · T${o.tier}</div>`
+      :`<div class="inv-cdot"></div><div class="inv-name" style="color:#ccc">???</div><div class="inv-rare" style="color:#ddd">unknown</div>`;
+    g.appendChild(d);
+  });
+}
+
+function renderSet(){
+  let br=document.getElementById('bg-row');br.innerHTML='';
+  BGS.forEach(c=>{
+    let d=document.createElement('div');
+    d.className='bg-swatch'+(bgVal===c.val?' sel':'');
+    d.style.background=c.val;d.title=c.name;
+    d.onclick=()=>{bgVal=c.val;applyBg();renderSet()};
+    br.appendChild(d);
+  });
+  let best=getBest();
+  document.getElementById('stats-box').innerHTML=[
+    ['Total spins',G.spins],
+    ['Total earned',fmt(G.earned)],
+    ['Rebirths',G.rebirths],
+    ['Best tier','T'+G.bestTier],
+    ['Best ore',best?best.name:'None'],
+    ['Coins / sec',fmt(getCPS())],
+  ].map(([k,v])=>`<div class="stat-r"><span>${k}</span><b>${v}</b></div>`).join('');
+}
+
+function applyBg(){
+  document.body.style.background=bgVal;
+  document.getElementById('root').style.background=bgVal;
+}
+
+setInterval(()=>{
+  let g=getCPS()/10;
+  if(g>0){G.coins+=g;G.earned+=g;}
+  updateUI();
+},100);
+
+applyBg();updateUI();
+</script>
