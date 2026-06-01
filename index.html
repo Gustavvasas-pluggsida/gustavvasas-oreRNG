@@ -301,7 +301,29 @@ function getBest(){
 
   return best;
 }
-function getCPS(){let b=getBest();return b?b.cps:0;}
+function getCPS(){
+  let total = 0;
+
+  // normal ores
+  for(let id in G.inv){
+    let count = G.inv[id] || 0;
+
+    if(count > 0){
+      total += ORES[id].cps * count;
+    }
+  }
+
+  // super ores
+  for(let id in G.superInv){
+    let count = G.superInv[id] || 0;
+
+    if(count > 0){
+      total += (ORES[id].cps * 5) * count;
+    }
+  }
+
+  return total;
+}
 function fmt(n){if(n>=1e12)return(n/1e12).toFixed(2)+'T';if(n>=1e9)return(n/1e9).toFixed(2)+'B';if(n>=1e6)return(n/1e6).toFixed(2)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return n.toFixed(2)}
 
 function roll(spin){
@@ -401,7 +423,7 @@ function openOreModal(id){
     'Normal: ' + count;
 
   document.getElementById('modal-super').textContent =
-    'Super: ' + superCount + ' · ' + fmt(ore.cps * 2) + ' / sec';
+    'Super: ' + superCount + ' · ' + fmt(ore.cps * 5) + ' / sec';
 
   let btn = document.getElementById('merge-btn');
 
