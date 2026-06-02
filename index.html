@@ -407,39 +407,73 @@ function openOreModal(id){
   currentOre = id;
 
   let ore = ORES[id];
+
   let count = G.inv[id] || 0;
+
   let superCount = G.superInv[id] || 0;
 
   document.getElementById('ore-modal').style.display = 'flex';
 
-  document.getElementById('modal-title').textContent = ore.name;
+  document.getElementById('modal-title').textContent =
+    ore.name;
 
-  document.getElementById('modal-title').style.color = ore.color;
+  document.getElementById('modal-title').style.color =
+    ore.color;
 
   document.getElementById('modal-info').textContent =
     ore.rarity + ' · Tier ' + ore.tier;
 
   document.getElementById('modal-count').textContent =
-    'Normal: ' + count;
+    'Normal ores: ' + count;
 
   document.getElementById('modal-super').textContent =
-    'Super: ' + superCount + ' · ' + fmt(ore.cps * 5) + ' / sec';
+    'Super ores: ' + superCount +
+    ' · ' + fmt(ore.cps * 5) + ' / sec';
 
   let btn = document.getElementById('merge-btn');
 
   if(count >= 5){
     btn.style.display = 'block';
-    btn.textContent = 'Merge 5 into Super Ore';
+    btn.disabled = false;
   }else{
     btn.style.display = 'none';
   }
 }
-
 function closeOreModal(){
   document.getElementById('ore-modal').style.display = 'none';
 }
 
 document.getElementById('merge-btn').onclick = function(){
+
+  if(currentOre === null) return;
+
+  let count = G.inv[currentOre] || 0;
+
+  if(count < 5){
+    alert("You need 5 ores.");
+    return;
+  }
+
+  // remove 5 normal ores
+  G.inv[currentOre] -= 5;
+
+  // add 1 super ore
+  G.superInv[currentOre] =
+    (G.superInv[currentOre] || 0) + 1;
+
+  // cleanup
+  if(G.inv[currentOre] <= 0){
+    delete G.inv[currentOre];
+  }
+
+  saveGame();
+
+  updateUI();
+
+  renderInv();
+
+  openOreModal(currentOre);
+};
   if(currentOre === null) return;
 
   let count = G.inv[currentOre] || 0;
